@@ -67,7 +67,6 @@ Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử 
 | **Database/Storage** | Web Storage API | `localStorage` (dữ liệu bền vững) & `sessionStorage` (phiên đăng nhập) |
 | **Styling** | CSS thuần (CSS Variables) | Không dùng framework CSS ngoài, dễ chỉnh sửa UI tùy ý |
 | **Hosting** | Netlify | Hỗ trợ cấu hình chuyển hướng route để tránh lỗi 404 (`netlify.toml`) |
-| **Python Tooling** | `uv` / python | Khởi chạy môi trường Python và thư viện hỗ trợ (numpy, pandas) phục vụ xử lý dữ liệu/phân tích (nếu cần) |
 
 ---
 
@@ -107,9 +106,7 @@ edu-trade/
 ├── index.html                   # File HTML gốc của ứng dụng
 ├── LICENSE                      # Giấy phép mã nguồn mở MIT
 ├── netlify.toml                 # File cấu hình deploy & redirect cho Netlify
-├── package.json                 # Khai báo thư viện phụ thuộc và scripts
-├── pyproject.toml               # Khai báo môi trường và thư viện Python (numpy, pandas)
-└── uv.lock                      # Lockfile quản lý gói của Python (uv)
+└── package.json                 # Khai báo thư viện phụ thuộc và scripts
 ```
 
 ---
@@ -119,7 +116,6 @@ edu-trade/
 ### Yêu Cầu Hệ Thống
 * Đã cài đặt **Node.js** (Phiên bản v18 trở lên được khuyến nghị)
 * Đã cài đặt **npm** hoặc **yarn** hoặc **pnpm**
-* *(Tùy chọn)* **Python** >= 3.11 và công cụ `uv` nếu cần chạy các tập lệnh Python phụ trợ
 
 ### Các Bước Thực Hiện:
 
