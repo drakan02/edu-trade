@@ -12,14 +12,14 @@
 
 👉 **Link Demo trực tuyến**: [https://resplendent-mochi-aa8cdd.netlify.app/](https://resplendent-mochi-aa8cdd.netlify.app/)
 
-Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử dụng **React**, **TypeScript**, **Vite** và lưu trữ dữ liệu cục bộ thông qua **localStorage** & **sessionStorage**. Dự án được cấu hình sẵn để dễ dàng triển khai (deploy) lên **Netlify**.
+Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử dụng **React**, **TypeScript**, **Vite** và lưu trữ dữ liệu cục bộ thông qua **localStorage** & **sessionStorage**.
 
 ---
 
 ## 🎯 Điểm Đặc Trưng Cốt Lõi
 
 1. **Giới hạn đăng ký bằng Email sinh viên (`@*.edu.vn`)**:
-   * Chỉ những người dùng sở hữu email kết thúc bằng đuôi `.edu.vn` (ví dụ: `abc@sis.hust.edu.vn`, `xyz@student.hcmut.edu.vn`, `user@vnu.edu.vn`) mới có thể đăng ký tài khoản và đăng tin hoặc liên hệ mua bán.
+   * Chỉ những người dùng sở hữu email kết thúc bằng đuôi `.edu.vn` (ví dụ: `abc@sis.hust.edu.vn`, `xyz@neu.edu.vn`, `user@vnu.edu.vn`) mới có thể đăng ký tài khoản và đăng tin hoặc liên hệ mua bán.
 2. **Bảo mật & Ẩn thông tin liên hệ của người bán**:
    * Khách vãng lai (chưa đăng nhập) chỉ được xem danh sách sản phẩm và chi tiết sản phẩm cơ bản (tiêu đề, giá, hình ảnh, mô tả).
    * **Thông tin liên hệ nhạy cảm** (Số điện thoại, liên kết chat) và tính năng nhắn tin sẽ **bị khóa ẩn** và yêu cầu người dùng phải đăng nhập bằng tài khoản sinh viên hợp lệ để xem.
@@ -149,7 +149,7 @@ Vì đây là ứng dụng Pure Frontend, toàn bộ dữ liệu được lưu t
 
 1. `edutrade_products` (Mảng `Product[]`): Lưu thông tin các tin đăng mới do người dùng tạo (không bao gồm dữ liệu mẫu).
 2. `edutrade_users` (Mảng `User[]`): Lưu danh sách thông tin tài khoản sinh viên đã đăng ký trên thiết bị.
-3. `edutrade_passwords` (Object `{ [userId]: string }`): Lưu mật khẩu dạng text thô (chỉ phục vụ mục đích mô phỏng đăng nhập).
+3. `edutrade_passwords` (Object `{ [userId]: string }`): Lưu mật khẩu của người dùng đã được mã hóa (băm) bằng thuật toán SHA-256.
 4. `edutrade_messages` (Mảng `Message[]`): Lưu lịch sử toàn bộ các tin nhắn trò chuyện qua lại.
 5. `edutrade_wishlist_<userId>` (Mảng `string[]`): Lưu danh sách `id` của sản phẩm yêu thích tương ứng với từng tài khoản sinh viên.
 6. `edutrade_session` (sessionStorage) (Đối tượng `User | null`): Quản lý tài khoản đang đăng nhập trong phiên tab hiện tại.
