@@ -73,6 +73,7 @@ export default function DetailPage() {
             alt={product.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
             onError={(event) => {
+              event.currentTarget.onerror = null;
               event.currentTarget.src = "/placeholder.jpg";
             }}
           />

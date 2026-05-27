@@ -20,7 +20,7 @@ export default function RegisterPage() {
   const passwordsMatch = !shouldValidatePasswordMatch || password === confirmPassword;
   const canSubmit = isEmailValid && passwordsMatch && password.length >= 6 && name.trim().length > 0;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
     if (password !== confirmPassword) {
@@ -40,7 +40,7 @@ export default function RegisterPage() {
       return;
     }
 
-    const registerError = register(name, email, password);
+    const registerError = await register(name, email, password);
     if (registerError) {
       setError(registerError);
       return;
@@ -168,6 +168,9 @@ export default function RegisterPage() {
                   setOtp(event.target.value.replace(/\D/g, "").slice(0, 6));
                 }}
               />
+              <span className="muted" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                Nhập mã demo: <strong>123456</strong>
+              </span>
             </label>
           ) : null}
 

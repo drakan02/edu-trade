@@ -17,6 +17,7 @@ export default function CreatePage() {
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [imageName, setImageName] = useState("");
   const [imageError, setImageError] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
@@ -65,6 +66,8 @@ export default function CreatePage() {
       return;
     }
 
+    setSubmitError("");
+
     const product: Product = {
       id: `user-${Date.now()}`,
       title: title.trim(),
@@ -80,8 +83,16 @@ export default function CreatePage() {
       createdAt: new Date().toISOString(),
     };
 
-    saveProduct(product);
-    navigate(`/san-pham/${product.id}`);
+    try {
+      saveProduct(product);
+      navigate(`/san-pham/${product.id}`);
+    } catch (err: any) {
+      if (err.message === "QUOTA_EXCEEDED") {
+        setSubmitError("Bộ nhớ trình duyệt (localStorage) đã đầy! Vui lòng xóa bớt tin cũ hoặc tải ảnh có kích thước nhỏ hơn.");
+      } else {
+        setSubmitError("Đã xảy ra lỗi khi đăng tin. Vui lòng thử lại.");
+      }
+    }
   }
 
   return (
@@ -90,6 +101,12 @@ export default function CreatePage() {
       <p className="muted" style={{ marginTop: "0.35rem", marginBottom: "1.4rem" }}>
         Tên người bán: <strong style={{ color: BRAND.primary }}>{user?.name}</strong> · {user?.email}
       </p>
+
+      {submitError ? (
+        <div className="alert alert-error" style={{ marginBottom: "1rem" }}>
+          {submitError}
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="card" style={{ display: "grid", gap: "1rem", padding: "1.25rem", cursor: "default" }}>
         <label className="form-field">
@@ -157,6 +174,7 @@ export default function CreatePage() {
               alt="Xem trước ảnh sản phẩm"
               style={{ width: 120, height: 90, objectFit: "cover", borderRadius: "var(--radius)" }}
               onError={(event) => {
+                event.currentTarget.onerror = null;
                 event.currentTarget.src = "/placeholder.jpg";
               }}
             />

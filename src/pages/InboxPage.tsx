@@ -152,6 +152,7 @@ export default function InboxPage() {
                     alt={item.productTitle}
                     style={{ width: 56, height: 56, objectFit: "cover", borderRadius: "var(--radius)" }}
                     onError={(event) => {
+                      event.currentTarget.onerror = null;
                       event.currentTarget.src = "/placeholder.jpg";
                     }}
                   />

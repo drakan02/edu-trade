@@ -1,4 +1,4 @@
-import React, { FormEvent } from "react";
+import React, { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { BRAND } from "../types";
@@ -7,12 +7,16 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") ?? "");
+
+  const searchParamValue = searchParams.get("search") ?? "";
+  useEffect(() => {
+    setSearchQuery(searchParamValue);
+  }, [searchParamValue]);
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const query = String(formData.get("q") ?? "").trim();
-
+    const query = searchQuery.trim();
     navigate(query ? `/?search=${encodeURIComponent(query)}` : "/");
   }
 
@@ -46,7 +50,8 @@ export default function Navbar() {
           <input
             name="q"
             type="search"
-            defaultValue={searchParams.get("search") ?? ""}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm sách, laptop, quần áo..."
             aria-label="Tìm kiếm sản phẩm"
             style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 0 }}

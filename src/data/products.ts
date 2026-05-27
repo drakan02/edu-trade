@@ -131,7 +131,17 @@ function readUserProducts(): Product[] {
 }
 
 function writeUserProducts(products: Product[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+    ) {
+      throw new Error("QUOTA_EXCEEDED");
+    }
+    throw error;
+  }
 }
 
 export function getAllProducts(): Product[] {

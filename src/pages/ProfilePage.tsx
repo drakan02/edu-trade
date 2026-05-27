@@ -100,6 +100,7 @@ export default function ProfilePage() {
                 alt={product.title}
                 style={{ width: 88, height: 72, objectFit: "cover", borderRadius: "var(--radius)" }}
                 onError={(event) => {
+                  event.currentTarget.onerror = null;
                   event.currentTarget.src = "/placeholder.jpg";
                 }}
               />

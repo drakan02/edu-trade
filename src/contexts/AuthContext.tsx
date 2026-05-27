@@ -3,8 +3,8 @@ import { User } from "../types";
 
 interface AuthContextValue {
   user: User | null;
-  register: (name: string, email: string, password: string) => string | null;
-  login: (email: string, password: string) => string | null;
+  register: (name: string, email: string, password: string) => Promise<string | null>;
+  login: (email: string, password: string) => Promise<string | null>;
   logout: () => void;
 }
 
@@ -16,6 +16,13 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function isEduEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.edu\.vn$/i.test(email.trim());
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function readUsers(): User[] {
@@ -67,7 +74,7 @@ function readSession(): User | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => readSession());
 
-  function register(name: string, email: string, password: string): string | null {
+  async function register(name: string, email: string, password: string): Promise<string | null> {
     const trimmedName = name.trim();
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -86,19 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
+    const hashedPassword = await hashPassword(password);
+
     writeUsers([...users, newUser]);
-    writePasswords({ ...readPasswords(), [newUser.id]: password });
+    writePasswords({ ...readPasswords(), [newUser.id]: hashedPassword });
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(newUser));
     setUser(newUser);
     return null;
   }
 
-  function login(email: string, password: string): string | null {
+  async function login(email: string, password: string): Promise<string | null> {
     const normalizedEmail = email.trim().toLowerCase();
     const foundUser = readUsers().find((storedUser) => storedUser.email.toLowerCase() === normalizedEmail);
 
     if (!foundUser) return "Email chưa được đăng ký.";
-    if (readPasswords()[foundUser.id] !== password) return "Mật khẩu không đúng.";
+    const hashedPassword = await hashPassword(password);
+    if (readPasswords()[foundUser.id] !== hashedPassword) return "Mật khẩu không đúng.";
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(foundUser));
     setUser(foundUser);

@@ -38,6 +38,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           loading="lazy"
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
           onError={(event) => {
+            event.currentTarget.onerror = null;
             event.currentTarget.src = "/placeholder.jpg";
           }}
         />

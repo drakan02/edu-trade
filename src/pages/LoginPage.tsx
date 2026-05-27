@@ -16,9 +16,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const loginError = login(email, password);
+    const loginError = await login(email, password);
 
     if (loginError) {
       setError(loginError);
