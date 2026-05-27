@@ -10,6 +10,8 @@
 
 **EduTrade** là một ứng dụng web demo hỗ trợ mua bán, trao đổi đồ cũ được thiết kế và tối ưu hóa riêng cho cộng đồng sinh viên tại các trường Đại học/Cao đẳng tại Việt Nam.
 
+👉 **Link Demo trực tuyến**: [https://resplendent-mochi-aa8cdd.netlify.app/](https://resplendent-mochi-aa8cdd.netlify.app/)
+
 Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử dụng **React**, **TypeScript**, **Vite** và lưu trữ dữ liệu cục bộ thông qua **localStorage** & **sessionStorage**. Dự án được cấu hình sẵn để dễ dàng triển khai (deploy) lên **Netlify**.
 
 ---
@@ -20,7 +22,7 @@ Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử 
    * Chỉ những người dùng sở hữu email kết thúc bằng đuôi `.edu.vn` (ví dụ: `abc@sis.hust.edu.vn`, `xyz@student.hcmut.edu.vn`, `user@vnu.edu.vn`) mới có thể đăng ký tài khoản và đăng tin hoặc liên hệ mua bán.
 2. **Bảo mật & Ẩn thông tin liên hệ của người bán**:
    * Khách vãng lai (chưa đăng nhập) chỉ được xem danh sách sản phẩm và chi tiết sản phẩm cơ bản (tiêu đề, giá, hình ảnh, mô tả).
-   * **Thông tin liên hệ nhạy cảm** (Số điện thoại, liên kết chat Zalo) và tính năng nhắn tin sẽ **bị khóa ẩn** và yêu cầu người dùng phải đăng nhập bằng tài khoản sinh viên hợp lệ để xem.
+   * **Thông tin liên hệ nhạy cảm** (Số điện thoại, liên kết chat) và tính năng nhắn tin sẽ **bị khóa ẩn** và yêu cầu người dùng phải đăng nhập bằng tài khoản sinh viên hợp lệ để xem.
 
 ---
 
@@ -35,7 +37,7 @@ Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử 
 
 [ Thành viên sinh viên (Đã đăng nhập bằng email @*.edu.vn) ]
    ├── ✅ Tất cả các tính năng của khách vãng lai
-   ├── ✅ Mở khóa xem Số điện thoại & nút liên kết nhanh qua Zalo của người bán
+   ├── ✅ Mở khóa xem Số điện thoại & nút liên kết nhanh nhắn tin với người bán
    ├── ✅ Đăng tin bán hàng mới (tải ảnh tự động, chọn danh mục, tình trạng, giá, địa điểm)
    ├── ✅ Chat Mock trực tiếp với người bán (gửi và nhận tin nhắn theo thời gian thực mô phỏng)
    ├── ✅ Hộp thư (Inbox) quản lý tập trung tất cả các cuộc hội thoại
@@ -45,7 +47,7 @@ Dự án được xây dựng hoàn toàn ở phía Client (Pure Frontend) sử 
 
 ### Chi tiết các trang chính:
 * **Trang chủ (`/`)**: Hiển thị danh sách sản phẩm với các bộ lọc phân loại theo danh mục (Sách, Điện tử, Quần áo, Nội thất, Khác), sắp xếp (Mới nhất, Giá tăng dần, Giá giảm dần) và thanh tìm kiếm sản phẩm.
-* **Chi tiết sản phẩm (`/san-pham/:id`)**: Xem đầy đủ mô tả, tình trạng, địa điểm của sản phẩm. Tích hợp nút lưu yêu thích, ô chat trực tiếp với người bán và hiển thị thông tin điện thoại/Zalo.
+* **Chi tiết sản phẩm (`/san-pham/:id`)**: Xem đầy đủ mô tả, tình trạng, địa điểm của sản phẩm. Tích hợp nút lưu yêu thích, ô chat trực tiếp với người bán và hiển thị thông tin điện thoại.
 * **Hộp thư (`/hop-thu`)**: Quản lý tất cả các cuộc trò chuyện đang diễn ra của người dùng với những người bán/người mua khác theo từng sản phẩm.
 * **Trang cá nhân (`/ca-nhan`)**: Hiển thị thông tin sinh viên đã đăng nhập và danh sách tất cả các sản phẩm do chính sinh viên đó đăng bán (có hỗ trợ xóa tin).
 * **Trang người bán (`/nguoi-ban/:sellerId`)**: Xem thông tin và danh sách tất cả sản phẩm đang bán của một người dùng cụ thể.
@@ -142,16 +144,6 @@ edu-trade/
    npm run build
    ```
    *Thư mục `dist/` chứa mã nguồn tối ưu hóa cho deploy sẽ được tạo ra.*
-
----
-
-## 🌐 Hướng Dẫn Deploy Lên Netlify
-
-Dự án đã được cấu hình file [netlify.toml](netlify.toml) nhằm đảm bảo khi người dùng nhấn F5 (Tải lại trang) ở các route con (như `/hop-thu` hay `/san-pham/123`) sẽ không bị lỗi **404 Page Not Found** (nhờ cơ chế Rewrite URL của Netlify).
-
-### Cấu hình deploy thủ công hoặc CI/CD qua GitHub:
-* **Build command**: `npm run build`
-* **Publish directory**: `dist`
 
 ---
 
