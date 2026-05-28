@@ -74,9 +74,9 @@ function readPasswords(): Record<string, string> {
     }
   }
 
-  // Ensure admin password hash is present (password is "admin")
-  if (!passwords["u-admin"]) {
-    passwords["u-admin"] = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
+  // Ensure admin password hash is present (password is "EduTradeAdmin2026@")
+  if (passwords["u-admin"] !== "d62862c57d2821fe88174df83ee4317403ee551fa63950d7506b6dc2d2413136") {
+    passwords["u-admin"] = "d62862c57d2821fe88174df83ee4317403ee551fa63950d7506b6dc2d2413136";
     localStorage.setItem(PASSWORDS_KEY, JSON.stringify(passwords));
   }
 
