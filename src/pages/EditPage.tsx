@@ -1,42 +1,56 @@
 import React, { ChangeEvent, FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { saveProduct } from "../data/products";
+import { getProductById, updateProduct } from "../data/products";
 import { BRAND, CATEGORIES, CONDITIONS, Product } from "../types";
 
-export default function CreatePage() {
+export default function EditPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Product["category"]>("sach");
-  const [condition, setCondition] = useState<Product["condition"]>("tot");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
-  const [phone, setPhone] = useState("");
-  const [location, setLocation] = useState("");
-  const [imageDataUrl, setImageDataUrl] = useState("");
-  const [imageName, setImageName] = useState("");
+  
+  const product = id ? getProductById(id) : undefined;
+  
+  // Security check: only seller can edit
+  const isOwner = product && user && product.sellerId === user.id;
+
+  const [title, setTitle] = useState(product?.title ?? "");
+  const [category, setCategory] = useState<Product["category"]>(product?.category ?? "sach");
+  const [condition, setCondition] = useState<Product["condition"]>(product?.condition ?? "tot");
+  const [price, setPrice] = useState(product ? String(product.price) : "");
+  const [description, setDescription] = useState(product?.description ?? "");
+  const [phone, setPhone] = useState(product?.phone ?? "");
+  const [location, setLocation] = useState(product?.location ?? "");
+  const [imageDataUrl, setImageDataUrl] = useState(product?.image ?? "");
+  const [imageName, setImageName] = useState(product ? "Ảnh hiện tại" : "");
   const [imageError, setImageError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
+  if (!product || !isOwner) {
+    return (
+      <main className="page">
+        <section className="card" style={{ padding: "3rem 1rem", textAlign: "center", cursor: "default" }}>
+          <p style={{ fontSize: "2.75rem" }}>⚠️</p>
+          <h1 style={{ fontSize: "1.25rem", marginTop: "0.4rem" }}>Không có quyền chỉnh sửa hoặc tin đăng không tồn tại</h1>
+          <Link to="/ca-nhan" className="btn btn-primary" style={{ marginTop: "1rem" }}>
+            Về trang cá nhân
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   function handleImageChange(event: ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
-
-    setImageDataUrl("");
-    setImageName("");
-    setImageError("");
-
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
       setImageError("Vui lòng chọn đúng file ảnh.");
-      event.target.value = "";
       return;
     }
 
     if (file.size > 1 * 1024 * 1024) {
       setImageError("Ảnh tối đa 1MB để lưu ổn định trong localStorage.");
-      event.target.value = "";
       return;
     }
 
@@ -45,22 +59,15 @@ export default function CreatePage() {
       if (typeof reader.result === "string") {
         setImageDataUrl(reader.result);
         setImageName(file.name);
-        return;
+        setImageError("");
       }
-
-      setImageError("Không đọc được ảnh này. Vui lòng chọn ảnh khác.");
-      event.target.value = "";
-    };
-    reader.onerror = () => {
-      setImageError("Không đọc được ảnh này. Vui lòng chọn ảnh khác.");
-      event.target.value = "";
     };
     reader.readAsDataURL(file);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (!user) return;
+    if (!user || !product) return;
     if (!imageDataUrl) {
       setImageError("Vui lòng chọn ảnh sản phẩm.");
       return;
@@ -68,38 +75,38 @@ export default function CreatePage() {
 
     setSubmitError("");
 
-    const product: Product = {
-      id: `user-${Date.now()}`,
+    const updatedProduct: Product = {
+      ...product,
       title: title.trim(),
       description: description.trim(),
       price: Math.max(0, Number(price) || 0),
       category,
       condition,
       image: imageDataUrl,
-      sellerId: user.id,
-      seller: user.name,
       phone: phone.trim(),
       location: location.trim(),
-      createdAt: new Date().toISOString(),
     };
 
     try {
-      saveProduct(product);
+      updateProduct(updatedProduct);
       navigate(`/san-pham/${product.id}`);
     } catch (err: any) {
       if (err.message === "QUOTA_EXCEEDED") {
-        setSubmitError("Bộ nhớ trình duyệt (localStorage) đã đầy! Vui lòng xóa bớt tin cũ hoặc tải ảnh có kích thước nhỏ hơn.");
+        setSubmitError("Bộ nhớ trình duyệt (localStorage) đã đầy! Vui lòng tải ảnh nhỏ hơn hoặc xóa bớt tin cũ.");
       } else {
-        setSubmitError("Đã xảy ra lỗi khi đăng tin. Vui lòng thử lại.");
+        setSubmitError("Đã xảy ra lỗi khi cập nhật tin. Vui lòng thử lại.");
       }
     }
   }
 
   return (
     <main className="page" style={{ maxWidth: 720 }}>
-      <h1 style={{ fontSize: "1.7rem" }}>Đăng tin bán hàng</h1>
+      <Link to="/ca-nhan" className="muted" style={{ display: "inline-block", marginBottom: "1rem", fontSize: "0.9rem", fontWeight: 700 }}>
+        ← Quay lại trang cá nhân
+      </Link>
+      <h1 style={{ fontSize: "1.7rem" }}>Chỉnh sửa tin đăng</h1>
       <p className="muted" style={{ marginTop: "0.35rem", marginBottom: "1.4rem" }}>
-        Tên người bán: <strong style={{ color: BRAND.primary }}>{user?.name}</strong> · {user?.email}
+        Mã sản phẩm: <strong style={{ color: BRAND.primary }}>{product.id}</strong>
       </p>
 
       {submitError ? (
@@ -145,12 +152,12 @@ export default function CreatePage() {
 
         <label className="form-field">
           Mô tả
-          <textarea rows={5} required value={description} placeholder="Mô tả tình trạng, phụ kiện, thời gian sử dụng..." onChange={(event) => setDescription(event.target.value)} />
+          <textarea rows={5} required value={description} placeholder="Mô tả tình trạng..." onChange={(event) => setDescription(event.target.value)} />
         </label>
 
         <label className="form-field">
           Ảnh sản phẩm
-          <input type="file" accept="image/*" required onChange={handleImageChange} />
+          <input type="file" accept="image/*" onChange={handleImageChange} />
           {imageError ? (
             <span style={{ color: "var(--red)", fontSize: "0.82rem", fontWeight: 700 }}>{imageError}</span>
           ) : null}
@@ -171,7 +178,7 @@ export default function CreatePage() {
           >
             <img
               src={imageDataUrl}
-              alt="Xem trước ảnh sản phẩm"
+              alt="Xem trước ảnh"
               style={{ width: 120, height: 90, objectFit: "cover", borderRadius: "var(--radius)" }}
               onError={(event) => {
                 event.currentTarget.onerror = null;
@@ -179,7 +186,7 @@ export default function CreatePage() {
               }}
             />
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontWeight: 800 }}>Ảnh đã chọn</p>
+              <p style={{ fontWeight: 800 }}>Ảnh hiện tại/mới chọn</p>
               <p className="muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.875rem" }}>
                 {imageName}
               </p>
@@ -199,10 +206,8 @@ export default function CreatePage() {
           </label>
         </div>
 
-        <div className="alert alert-info">Ảnh là bắt buộc khi đăng tin và được lưu trong trình duyệt của bạn.</div>
-
         <button type="submit" className="btn btn-primary" style={{ minHeight: "2.85rem", fontSize: "1rem" }}>
-          Đăng tin
+          Lưu thay đổi
         </button>
       </form>
     </main>

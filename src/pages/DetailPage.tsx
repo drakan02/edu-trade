@@ -16,8 +16,27 @@ export default function DetailPage() {
   const { user } = useAuth();
   const product = id ? getProductById(id) : undefined;
   const { isWished, toggle } = useWishlist(user?.id);
-  const { comments, addComment } = useComments(id ?? "");
+  const { comments, addComment, deleteComment } = useComments(id ?? "");
   const [commentText, setCommentText] = useState("");
+  const [replyText, setReplyText] = useState("");
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+
+  const rootComments = React.useMemo(
+    () => comments.filter((c) => !c.parentId),
+    [comments]
+  );
+
+  const repliesByParent = React.useMemo(() => {
+    const map = new Map<string, typeof comments>();
+    comments.forEach((c) => {
+      if (c.parentId) {
+        const list = map.get(c.parentId) || [];
+        list.push(c);
+        map.set(c.parentId, list);
+      }
+    });
+    return map;
+  }, [comments]);
 
   if (!product) {
     return (
@@ -54,10 +73,17 @@ export default function DetailPage() {
   }
 
   function handleCommentKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !event.nativeEvent.isComposing) {
       event.preventDefault();
       handleAddComment();
     }
+  }
+
+  function handleSendReply(parentId: string): void {
+    if (!user || !replyText.trim()) return;
+    addComment(replyText, user.id, user.name, parentId);
+    setReplyText("");
+    setReplyingToId(null);
   }
 
   return (
@@ -173,32 +199,182 @@ export default function DetailPage() {
         <h2 style={{ fontSize: "1.15rem", marginBottom: "1rem" }}>💭 Bình luận ({comments.length})</h2>
 
         <div style={{ display: "grid", gap: "0.75rem", marginBottom: "1rem" }}>
-          {comments.length === 0 ? (
+          {rootComments.length === 0 ? (
             <p className="muted" style={{ padding: "1rem", textAlign: "center", border: "1px solid var(--gray-200)", borderRadius: "var(--radius)" }}>
               Chưa có bình luận nào.
             </p>
           ) : (
-            comments.map((comment) => (
-              <article
-                key={comment.id}
-                style={{
-                  display: "grid",
-                  gap: "0.3rem",
-                  padding: "0.85rem",
-                  border: "1px solid var(--gray-200)",
-                  borderRadius: "var(--radius)",
-                  background: "var(--gray-50)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
-                  <strong>{comment.userName}</strong>
-                  <span className="muted" style={{ fontSize: "0.8rem" }}>
-                    {new Date(comment.createdAt).toLocaleString("vi-VN")}
-                  </span>
+            rootComments.map((comment) => {
+              const replies = repliesByParent.get(comment.id) || [];
+              const isReplying = replyingToId === comment.id;
+
+              return (
+                <div key={comment.id} style={{ display: "grid", gap: "0.5rem" }}>
+                  {/* Root Comment */}
+                  <article
+                    style={{
+                      display: "grid",
+                      gap: "0.3rem",
+                      padding: "0.85rem",
+                      border: "1px solid var(--gray-200)",
+                      borderRadius: "var(--radius)",
+                      background: "var(--gray-50)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+                      <strong>{comment.userName}</strong>
+                      <span className="muted" style={{ fontSize: "0.8rem" }}>
+                        {new Date(comment.createdAt).toLocaleString("vi-VN")}
+                      </span>
+                    </div>
+                    <p style={{ color: "var(--gray-800)" }}>{comment.text}</p>
+                    
+                    {/* Actions: Reply & Delete */}
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
+                      {user && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => {
+                            setReplyingToId(isReplying ? null : comment.id);
+                            setReplyText("");
+                          }}
+                          style={{
+                            padding: "0.15rem 0.5rem",
+                            minHeight: "1.7rem",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          💬 Trả lời
+                        </button>
+                      )}
+                      {user && user.id === comment.userId && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => {
+                            if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
+                              deleteComment(comment.id);
+                            }
+                          }}
+                          style={{
+                            padding: "0.15rem 0.5rem",
+                            minHeight: "1.7rem",
+                            fontSize: "0.75rem",
+                            color: "var(--red)",
+                          }}
+                        >
+                          🗑️ Xóa
+                        </button>
+                      )}
+                    </div>
+                  </article>
+
+                  {/* Replies Thread */}
+                  {replies.length > 0 && (
+                    <div
+                      style={{
+                        marginLeft: "1.5rem",
+                        display: "grid",
+                        gap: "0.5rem",
+                        borderLeft: "2px solid var(--gray-200)",
+                        paddingLeft: "0.85rem",
+                      }}
+                    >
+                      {replies.map((reply) => (
+                        <article
+                          key={reply.id}
+                          style={{
+                            display: "grid",
+                            gap: "0.3rem",
+                            padding: "0.65rem 0.75rem",
+                            border: "1px solid var(--gray-200)",
+                            borderRadius: "var(--radius)",
+                            background: "#fff",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+                            <strong>{reply.userName}</strong>
+                            <span className="muted" style={{ fontSize: "0.75rem" }}>
+                              {new Date(reply.createdAt).toLocaleString("vi-VN")}
+                            </span>
+                          </div>
+                          <p style={{ color: "var(--gray-800)", fontSize: "0.88rem" }}>{reply.text}</p>
+
+                          {/* Actions: Delete for reply */}
+                          {user && user.id === reply.userId && (
+                            <div style={{ marginTop: "0.25rem" }}>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                onClick={() => {
+                                  if (confirm("Bạn có chắc chắn muốn xóa phản hồi này?")) {
+                                    deleteComment(reply.id);
+                                  }
+                                }}
+                                style={{
+                                  padding: "0.15rem 0.5rem",
+                                  minHeight: "1.7rem",
+                                  fontSize: "0.75rem",
+                                  color: "var(--red)",
+                                }}
+                              >
+                                🗑️ Xóa
+                              </button>
+                            </div>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reply Editor Form */}
+                  {isReplying && (
+                    <div
+                      style={{
+                        marginLeft: "1.5rem",
+                        display: "grid",
+                        gap: "0.5rem",
+                        padding: "0.75rem",
+                        borderLeft: "2px solid var(--primary-accent)",
+                      }}
+                    >
+                      <input
+                        value={replyText}
+                        placeholder={`Trả lời bình luận của ${comment.userName}...`}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                            e.preventDefault();
+                            handleSendReply(comment.id);
+                          }
+                        }}
+                        style={{ fontSize: "0.85rem", padding: "0.5rem 0.75rem" }}
+                      />
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={!replyText.trim()}
+                          onClick={() => handleSendReply(comment.id)}
+                          style={{ minHeight: "2rem", padding: "0.25rem 0.75rem", fontSize: "0.8rem" }}
+                        >
+                          Gửi
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => setReplyingToId(null)}
+                          style={{ minHeight: "2rem", padding: "0.25rem 0.75rem", fontSize: "0.8rem" }}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <p style={{ color: "var(--gray-800)" }}>{comment.text}</p>
-              </article>
-            ))
+              );
+            })
           )}
         </div>
 

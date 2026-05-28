@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { createContext, useContext, useCallback, useEffect, useState, ReactNode } from "react";
+import { useAuth } from "../contexts/AuthContext";
+
+interface WishlistContextValue {
+  ids: string[];
+  toggle: (productId: string) => void;
+  isWished: (productId: string) => boolean;
+}
+
+const WishlistContext = createContext<WishlistContextValue | null>(null);
 
 function getWishlistKey(userId: string): string {
   return `edutrade_wishlist_${userId}`;
@@ -17,36 +26,49 @@ function readWishlist(userId: string): string[] {
   }
 }
 
-export function useWishlist(userId: string | undefined): {
-  ids: string[];
-  toggle: (productId: string) => void;
-  isWished: (productId: string) => boolean;
-} {
-  const [ids, setIds] = useState<string[]>(() => (userId ? readWishlist(userId) : []));
+export function WishlistProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const [ids, setIds] = useState<string[]>([]);
 
   useEffect(() => {
-    setIds(userId ? readWishlist(userId) : []);
-  }, [userId]);
+    if (user?.id) {
+      setIds(readWishlist(user.id));
+    } else {
+      setIds([]);
+    }
+  }, [user?.id]);
 
   const toggle = useCallback(
     (productId: string) => {
-      if (!userId) return;
+      if (!user?.id) return;
 
       setIds((previousIds) => {
         const nextIds = previousIds.includes(productId)
           ? previousIds.filter((id) => id !== productId)
           : [...previousIds, productId];
 
-        localStorage.setItem(getWishlistKey(userId), JSON.stringify(nextIds));
+        localStorage.setItem(getWishlistKey(user.id), JSON.stringify(nextIds));
         return nextIds;
       });
     },
-    [userId],
+    [user?.id],
   );
 
-  function isWished(productId: string): boolean {
-    return ids.includes(productId);
-  }
+  const isWished = useCallback(
+    (productId: string) => {
+      return ids.includes(productId);
+    },
+    [ids],
+  );
 
-  return { ids, toggle, isWished };
+  return React.createElement(WishlistContext.Provider, { value: { ids, toggle, isWished } }, children);
 }
+
+export function useWishlist(_userId?: string | undefined): WishlistContextValue {
+  const context = useContext(WishlistContext);
+  if (!context) {
+    throw new Error("useWishlist must be used within a WishlistProvider");
+  }
+  return context;
+}
+

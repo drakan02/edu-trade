@@ -22,7 +22,8 @@ function writeComments(comments: ProductComment[]): void {
 
 export function useComments(productId: string): {
   comments: ProductComment[];
-  addComment: (text: string, userId: string, userName: string) => void;
+  addComment: (text: string, userId: string, userName: string, parentId?: string) => void;
+  deleteComment: (commentId: string) => void;
 } {
   const [allComments, setAllComments] = useState<ProductComment[]>(() => readComments());
 
@@ -35,7 +36,7 @@ export function useComments(productId: string): {
   );
 
   const addComment = useCallback(
-    (text: string, userId: string, userName: string) => {
+    (text: string, userId: string, userName: string, parentId?: string) => {
       if (!text.trim()) return;
 
       const comment: ProductComment = {
@@ -45,6 +46,7 @@ export function useComments(productId: string): {
         userName,
         text: text.trim(),
         createdAt: new Date().toISOString(),
+        parentId,
       };
       const nextComments = [...readComments(), comment];
 
@@ -54,5 +56,16 @@ export function useComments(productId: string): {
     [productId],
   );
 
-  return { comments, addComment };
+  const deleteComment = useCallback(
+    (commentId: string) => {
+      const raw = readComments();
+      // Remove comment itself, and if it's a root comment, also remove its replies
+      const nextComments = raw.filter((c) => c.id !== commentId && c.parentId !== commentId);
+      writeComments(nextComments);
+      setAllComments(nextComments);
+    },
+    [],
+  );
+
+  return { comments, addComment, deleteComment };
 }

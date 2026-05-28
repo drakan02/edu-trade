@@ -1,4 +1,4 @@
-import React, { KeyboardEvent, useMemo, useState } from "react";
+import React, { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { getProductById } from "../data/products";
@@ -22,21 +22,26 @@ function buildConversationKey(productId: string, otherUserId: string): string {
 export default function InboxPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const [messages, setMessages] = useState<Message[]>(() => readMessages());
   const [refreshToken, setRefreshToken] = useState(0);
   const [selectedKey, setSelectedKey] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [activeReactionPickerId, setActiveReactionPickerId] = useState<string | null>(null);
   const requestedProductId = searchParams.get("productId") ?? "";
   const requestedOtherUserId = searchParams.get("userId") ?? "";
   const requestedOtherName = searchParams.get("name") ?? "Người bán";
   const requestedKey =
     requestedProductId && requestedOtherUserId ? buildConversationKey(requestedProductId, requestedOtherUserId) : "";
 
+  // Mobile navigation state
+  const [mobileShowChat, setMobileShowChat] = useState(!!requestedKey);
+
   const conversations = useMemo<ConversationSummary[]>(() => {
     if (!user) return [];
 
     const grouped = new Map<string, ConversationSummary>();
 
-    readMessages()
+    messages
       .filter((message) => message.fromUserId === user.id || message.toUserId === user.id)
       .forEach((message) => {
         const product = getProductById(message.productId);
@@ -83,18 +88,29 @@ export default function InboxPage() {
       const aTime = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
       return bTime - aTime;
     });
-  }, [refreshToken, requestedOtherName, requestedOtherUserId, requestedProductId, user]);
+  }, [refreshToken, messages, requestedOtherName, requestedOtherUserId, requestedProductId, user]);
 
   const selectedConversation =
     conversations.find((conversation) => conversation.key === selectedKey) ??
     conversations.find((conversation) => conversation.key === requestedKey) ??
     conversations[0];
-  const { conversation, sendMessage } = useMessages(
+  const { conversation, sendMessage, reactToMessage } = useMessages(
     selectedConversation?.productId ?? "",
     user?.id,
     selectedConversation?.otherUserId ?? "",
     selectedConversation?.otherName ?? "Người bán",
+    messages,
+    setMessages,
   );
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom on conversation change
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversation.length]);
 
   function handleSendMessage(): void {
     if (!user || !selectedConversation || !messageText.trim()) return;
@@ -104,7 +120,7 @@ export default function InboxPage() {
   }
 
   function handleMessageKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !event.nativeEvent.isComposing) {
       event.preventDefault();
       handleSendMessage();
     }
@@ -124,15 +140,18 @@ export default function InboxPage() {
           </p>
         </section>
       ) : (
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(260px, 360px) minmax(0, 1fr)", gap: "1rem" }}>
-          <aside className="card" style={{ overflow: "hidden", cursor: "default" }}>
+        <section className="inbox-layout" style={{ display: "grid", gridTemplateColumns: "minmax(260px, 360px) minmax(0, 1fr)", gap: "1rem" }}>
+          <aside className={`card inbox-sidebar ${mobileShowChat ? "hidden-mobile" : ""}`} style={{ overflow: "hidden", cursor: "default" }}>
             {conversations.map((item) => {
               const isSelected = item.key === selectedConversation?.key;
               return (
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => setSelectedKey(item.key)}
+                  onClick={() => {
+                    setSelectedKey(item.key);
+                    setMobileShowChat(true);
+                  }}
                   style={{
                     width: "100%",
                     display: "grid",
@@ -172,12 +191,22 @@ export default function InboxPage() {
             })}
           </aside>
 
-          <section className="card" style={{ padding: "1rem", cursor: "default" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", marginBottom: "1rem" }}>
-              <div>
-                <h2 style={{ fontSize: "1.1rem" }}>{selectedConversation?.otherName}</h2>
+          <section className={`card inbox-chat ${!mobileShowChat ? "hidden-mobile" : ""}`} style={{ padding: "1rem", cursor: "default" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn btn-ghost inbox-back-btn"
+                onClick={() => setMobileShowChat(false)}
+                style={{ display: "none" }}
+              >
+                ← Trở lại
+              </button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h2 style={{ fontSize: "1.1rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {selectedConversation?.otherName}
+                </h2>
                 {selectedConversation ? (
-                  <Link to={`/san-pham/${selectedConversation.productId}`} className="muted" style={{ fontSize: "0.85rem", fontWeight: 700 }}>
+                  <Link to={`/san-pham/${selectedConversation.productId}`} className="muted" style={{ fontSize: "0.85rem", fontWeight: 700, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {selectedConversation.productTitle}
                   </Link>
                 ) : null}
@@ -192,7 +221,7 @@ export default function InboxPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.65rem",
-                padding: "0.9rem",
+                padding: "2.2rem 0.9rem",
                 marginBottom: "0.9rem",
                 borderRadius: "var(--radius)",
                 background: "var(--gray-50)",
@@ -204,25 +233,179 @@ export default function InboxPage() {
                   Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện.
                 </p>
               ) : (
-                conversation.map((message) => {
-                  const isMine = message.fromUserId === user.id;
-                  return (
-                    <div key={message.id} style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }}>
+                <>
+                  {conversation.map((message) => {
+                    const isMine = message.fromUserId === user.id;
+                    const hasReactions = message.reactions && Object.keys(message.reactions).length > 0;
+
+                    return (
                       <div
+                        key={message.id}
                         style={{
-                          maxWidth: "min(78%, 520px)",
-                          padding: "0.65rem 0.8rem",
-                          borderRadius: isMine ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
-                          background: isMine ? BRAND.primary : "#fff",
-                          color: isMine ? "#fff" : "var(--gray-900)",
-                          border: isMine ? "none" : "1px solid var(--gray-200)",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: isMine ? "flex-end" : "flex-start",
+                          position: "relative",
+                          marginBlock: "0.2rem",
                         }}
                       >
-                        <p style={{ fontSize: "0.9rem" }}>{message.text}</p>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.4rem",
+                            maxWidth: "100%",
+                          }}
+                        >
+                          {/* Reaction Floating Picker */}
+                          {activeReactionPickerId === message.id && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                bottom: "calc(100% - 2px)",
+                                right: isMine ? "10px" : "auto",
+                                left: !isMine ? "10px" : "auto",
+                                background: "#fff",
+                                border: "1px solid var(--gray-200)",
+                                borderRadius: "20px",
+                                padding: "4px 8px",
+                                display: "flex",
+                                gap: "0.4rem",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                zIndex: 10,
+                              }}
+                            >
+                              {["❤️", "👍", "😂", "😮", "😢", "🙏"].map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => {
+                                    reactToMessage(message.id, emoji);
+                                    setActiveReactionPickerId(null);
+                                  }}
+                                  style={{
+                                    border: "none",
+                                    background: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    fontSize: "1.15rem",
+                                    transition: "transform 0.1s ease",
+                                  }}
+                                  className="reaction-emoji-btn"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {isMine ? (
+                            <>
+                              {/* Reaction Trigger Button */}
+                              <button
+                                type="button"
+                                onClick={() => setActiveReactionPickerId(activeReactionPickerId === message.id ? null : message.id)}
+                                style={{
+                                  border: "none",
+                                  background: "none",
+                                  cursor: "pointer",
+                                  fontSize: "0.95rem",
+                                  padding: "0.25rem",
+                                  opacity: activeReactionPickerId === message.id ? 1 : 0.4,
+                                  transition: "opacity 0.15s ease",
+                                }}
+                                className="reaction-trigger-btn"
+                                title="Bày tỏ cảm xúc"
+                              >
+                                😀
+                              </button>
+
+                              {/* Message text bubble */}
+                              <div
+                                style={{
+                                  maxWidth: "min(78%, 520px)",
+                                  padding: "0.65rem 0.8rem",
+                                  borderRadius: "14px 14px 4px 14px",
+                                  background: BRAND.primary,
+                                  color: "#fff",
+                                  border: "none",
+                                }}
+                              >
+                                <p style={{ fontSize: "0.9rem" }}>{message.text}</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              {/* Message text bubble */}
+                              <div
+                                style={{
+                                  maxWidth: "min(78%, 520px)",
+                                  padding: "0.65rem 0.8rem",
+                                  borderRadius: "14px 14px 14px 4px",
+                                  background: "#fff",
+                                  color: "var(--gray-900)",
+                                  border: "1px solid var(--gray-200)",
+                                }}
+                              >
+                                <p style={{ fontSize: "0.9rem" }}>{message.text}</p>
+                              </div>
+
+                              {/* Reaction Trigger Button */}
+                              <button
+                                type="button"
+                                onClick={() => setActiveReactionPickerId(activeReactionPickerId === message.id ? null : message.id)}
+                                style={{
+                                  border: "none",
+                                  background: "none",
+                                  cursor: "pointer",
+                                  fontSize: "0.95rem",
+                                  padding: "0.25rem",
+                                  opacity: activeReactionPickerId === message.id ? 1 : 0.4,
+                                  transition: "opacity 0.15s ease",
+                                }}
+                                className="reaction-trigger-btn"
+                                title="Bày tỏ cảm xúc"
+                              >
+                                😀
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Docked Reactions List */}
+                        {hasReactions && (
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.2rem",
+                              marginTop: "-4px",
+                              marginRight: isMine ? "0px" : "auto",
+                              marginLeft: !isMine ? "0px" : "auto",
+                              background: "#fff",
+                              border: "1px solid var(--gray-200)",
+                              borderRadius: "12px",
+                              padding: "2px 6px",
+                              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                              width: "fit-content",
+                              zIndex: 1,
+                            }}
+                          >
+                            {Object.entries(message.reactions || {}).map(([userId, emoji]) => (
+                              <span
+                                key={userId}
+                                title={userId === user.id ? "Bạn" : "Đối phương"}
+                                style={{ fontSize: "0.75rem", cursor: "default" }}
+                              >
+                                {emoji}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                  <div ref={chatEndRef} />
+                </>
               )}
             </div>
 

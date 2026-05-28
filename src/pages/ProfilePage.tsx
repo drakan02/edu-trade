@@ -85,15 +85,7 @@ export default function ProfilePage() {
           {products.map((product) => (
             <article
               key={product.id}
-              className="card"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "88px minmax(0, 1fr) auto",
-                gap: "1rem",
-                alignItems: "center",
-                padding: "0.8rem",
-                cursor: "default",
-              }}
+              className="card profile-product-item"
             >
               <img
                 src={product.image}
@@ -113,9 +105,12 @@ export default function ProfilePage() {
                   {new Date(product.createdAt).toLocaleDateString("vi-VN")} · {product.location}
                 </p>
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <div className="profile-product-actions">
                 <Link to={`/san-pham/${product.id}`} className="btn btn-ghost">
                   Xem
+                </Link>
+                <Link to={`/sua-tin/${product.id}`} className="btn btn-ghost">
+                  Sửa
                 </Link>
                 <button type="button" onClick={() => handleDelete(product.id)} className="btn btn-danger">
                   Xóa

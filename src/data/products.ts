@@ -154,6 +154,36 @@ export function saveProduct(product: Product): void {
 
 export function deleteProduct(id: string): void {
   writeUserProducts(readUserProducts().filter((product) => product.id !== id));
+
+  // Cascade delete associated comments
+  const rawComments = localStorage.getItem("edutrade_comments");
+  if (rawComments) {
+    try {
+      const parsed = JSON.parse(rawComments) as any[];
+      const nextComments = parsed.filter((comment) => comment.productId !== id);
+      localStorage.setItem("edutrade_comments", JSON.stringify(nextComments));
+    } catch (e) {
+      console.error("Lỗi khi xóa bình luận đi kèm:", e);
+    }
+  }
+
+  // Cascade delete associated messages
+  const rawMessages = localStorage.getItem("edutrade_messages");
+  if (rawMessages) {
+    try {
+      const parsed = JSON.parse(rawMessages) as any[];
+      const nextMessages = parsed.filter((message) => message.productId !== id);
+      localStorage.setItem("edutrade_messages", JSON.stringify(nextMessages));
+    } catch (e) {
+      console.error("Lỗi khi xóa tin nhắn đi kèm:", e);
+    }
+  }
+}
+
+export function updateProduct(product: Product): void {
+  const products = readUserProducts();
+  const nextProducts = products.map((p) => (p.id === product.id ? product : p));
+  writeUserProducts(nextProducts);
 }
 
 export function getProductById(id: string): Product | undefined {

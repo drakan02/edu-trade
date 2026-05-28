@@ -8,10 +8,20 @@ type SortKey = "newest" | "price-asc" | "price-desc";
 type CategoryFilter = Product["category"] | "all";
 
 export default function HomePage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("search")?.trim() ?? "";
-  const [category, setCategory] = useState<CategoryFilter>("all");
+  const category = (searchParams.get("category") ?? "all") as CategoryFilter;
   const [sortKey, setSortKey] = useState<SortKey>("newest");
+
+  function setCategory(newCategory: CategoryFilter) {
+    const nextParams = new URLSearchParams(searchParams);
+    if (newCategory === "all") {
+      nextParams.delete("category");
+    } else {
+      nextParams.set("category", newCategory);
+    }
+    setSearchParams(nextParams);
+  }
 
   const products = useMemo(() => {
     const normalizedSearch = search.toLowerCase();

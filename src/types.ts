@@ -29,6 +29,7 @@ export interface Message {
   toName?: string;
   text: string;
   createdAt: string;
+  reactions?: Record<string, string>;
 }
 
 export interface ProductComment {
@@ -38,6 +39,7 @@ export interface ProductComment {
   userName: string;
   text: string;
   createdAt: string;
+  parentId?: string;
 }
 
 export const CATEGORIES = [

@@ -1,5 +1,5 @@
 import React, { MouseEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useWishlist } from "../hooks/useWishlist";
 import { BRAND, CATEGORIES, Product } from "../types";
@@ -14,6 +14,7 @@ function formatPrice(price: number): string {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { isWished, toggle } = useWishlist(user?.id);
   const categoryLabel = CATEGORIES.find((category) => category.value === product.category)?.label ?? product.category;
 
@@ -22,7 +23,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     event.stopPropagation();
 
     if (!user) {
-      alert("Đăng nhập để lưu sản phẩm yêu thích.");
+      navigate("/dang-nhap", { state: { from: window.location.pathname } });
       return;
     }
 
