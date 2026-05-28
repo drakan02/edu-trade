@@ -1,6 +1,6 @@
 import React, { KeyboardEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getProductById } from "../data/products";
+import { getProductById, deleteProduct } from "../data/products";
 import { useAuth } from "../contexts/AuthContext";
 import { useComments } from "../hooks/useComments";
 import { useWishlist } from "../hooks/useWishlist";
@@ -56,6 +56,12 @@ export default function DetailPage() {
   const categoryLabel = CATEGORIES.find((category) => category.value === currentProduct.category)?.label ?? currentProduct.category;
   const conditionLabel = CONDITIONS.find((condition) => condition.value === currentProduct.condition)?.label ?? currentProduct.condition;
   const isOwner = user?.id === currentProduct.sellerId;
+
+  function handleDeleteProduct(): void {
+    if (!confirm("Bạn có chắc chắn muốn xóa tin đăng này?")) return;
+    deleteProduct(currentProduct.id);
+    navigate("/");
+  }
 
   function handleWishlistClick(): void {
     if (!user) {
@@ -161,32 +167,51 @@ export default function DetailPage() {
                 </Link>
               </div>
             </div>
-          ) : isOwner ? (
-            <div className="alert alert-info" style={{ marginBottom: "1rem" }}>
-              Đây là tin bạn đăng.{" "}
-              <Link to="/ca-nhan" style={{ fontWeight: 900 }}>
-                Quản lý tại trang cá nhân
-              </Link>
-            </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "0.75rem",
-                marginBottom: "1rem",
-              }}
-            >
-              <a href={`tel:${product.phone}`} className="btn btn-primary">
-                📞 {product.phone}
-              </a>
-              <Link
-                to={`/hop-thu?productId=${encodeURIComponent(product.id)}&userId=${encodeURIComponent(product.sellerId)}&name=${encodeURIComponent(product.seller)}`}
-                className="btn btn-outline"
-              >
-                💬 Nhắn tin
-              </Link>
-            </div>
+            <>
+              {isOwner || user.role === "admin" ? (
+                <div className="alert alert-info" style={{ display: "grid", gap: "0.5rem", marginBottom: "1rem" }}>
+                  <span>
+                    {user.role === "admin"
+                      ? isOwner
+                        ? "🛡️ Đây là tin bạn đăng (Xem với quyền Admin)."
+                        : "🛡️ Chế độ Quản trị viên: Bạn có quyền kiểm soát tin đăng này."
+                      : "Đây là tin bạn đăng."}
+                  </span>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    {isOwner && (
+                      <Link to={`/sua-tin/${product.id}`} className="btn btn-ghost" style={{ flex: 1 }}>
+                        ✏️ Sửa tin
+                      </Link>
+                    )}
+                    <button type="button" onClick={handleDeleteProduct} className="btn btn-danger" style={{ flex: 1 }}>
+                      🗑️ Xóa tin
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {!isOwner && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "0.75rem",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <a href={`tel:${product.phone}`} className="btn btn-primary">
+                    📞 {product.phone}
+                  </a>
+                  <Link
+                    to={`/hop-thu?productId=${encodeURIComponent(product.id)}&userId=${encodeURIComponent(product.sellerId)}&name=${encodeURIComponent(product.seller)}`}
+                    className="btn btn-outline"
+                  >
+                    💬 Nhắn tin
+                  </Link>
+                </div>
+              )}
+            </>
           )}
 
           <button type="button" onClick={handleWishlistClick} className="btn btn-ghost" style={{ width: "100%" }}>
@@ -248,7 +273,7 @@ export default function DetailPage() {
                           💬 Trả lời
                         </button>
                       )}
-                      {user && user.id === comment.userId && (
+                      {user && (user.id === comment.userId || user.role === "admin") && (
                         <button
                           type="button"
                           className="btn btn-ghost"
@@ -302,7 +327,7 @@ export default function DetailPage() {
                           <p style={{ color: "var(--gray-800)", fontSize: "0.88rem" }}>{reply.text}</p>
 
                           {/* Actions: Delete for reply */}
-                          {user && user.id === reply.userId && (
+                          {user && (user.id === reply.userId || user.role === "admin") && (
                             <div style={{ marginTop: "0.25rem" }}>
                               <button
                                 type="button"

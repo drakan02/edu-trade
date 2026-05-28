@@ -27,15 +27,33 @@ export async function hashPassword(password: string): Promise<string> {
 
 function readUsers(): User[] {
   const raw = localStorage.getItem(USERS_KEY);
-  if (!raw) return [];
-
-  try {
-    const parsed = JSON.parse(raw) as User[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    localStorage.removeItem(USERS_KEY);
-    return [];
+  let users: User[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as User[];
+      if (Array.isArray(parsed)) {
+        users = parsed;
+      }
+    } catch {
+      localStorage.removeItem(USERS_KEY);
+    }
   }
+
+  // Ensure admin user exists
+  const hasAdmin = users.some((u) => u.email === "admin@edu.vn");
+  if (!hasAdmin) {
+    const adminUser: User = {
+      id: "u-admin",
+      name: "Quản trị viên",
+      email: "admin@edu.vn",
+      role: "admin",
+      createdAt: "2026-05-28T00:00:00.000Z",
+    };
+    users.push(adminUser);
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  return users;
 }
 
 function writeUsers(users: User[]): void {
@@ -44,15 +62,25 @@ function writeUsers(users: User[]): void {
 
 function readPasswords(): Record<string, string> {
   const raw = localStorage.getItem(PASSWORDS_KEY);
-  if (!raw) return {};
-
-  try {
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    localStorage.removeItem(PASSWORDS_KEY);
-    return {};
+  let passwords: Record<string, string> = {};
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as Record<string, string>;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        passwords = parsed;
+      }
+    } catch {
+      localStorage.removeItem(PASSWORDS_KEY);
+    }
   }
+
+  // Ensure admin password hash is present (password is "admin")
+  if (!passwords["u-admin"]) {
+    passwords["u-admin"] = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
+    localStorage.setItem(PASSWORDS_KEY, JSON.stringify(passwords));
+  }
+
+  return passwords;
 }
 
 function writePasswords(passwords: Record<string, string>): void {
